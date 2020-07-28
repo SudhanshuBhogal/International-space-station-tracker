@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Locate the iss</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.5.1/dist/leaflet.css"
+    integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+    crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.5.1/dist/leaflet.js"
+    integrity="sha512-GffPMF3RvMeYyc1LWMHtK8EbPv0iNZ8/oTtHPx9/cc2ILxQ+u905qIwdpULaqDkyBKgOaB57QTMg7ztg8Jm2Og=="
+    crossorigin=""></script>
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+
+
+    <style>
+        #info{
+            z-index:1;
+            position:relative;
+        }
+        #iss{
+            position:absolute;
+            width:100% !important;
+            height:700px !important;
+            z-index:0;
+            top:0;
+            left:0;
+            margin: 0;
+            padding: 0;
+        }
+        .i{
+            text-shadow:0 0 5px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+
+
+<body>
+    <div id="info">
+            <nav class="navbar navbar-expand-lg navbar-light bg-dark container shadow-lg">
+                    <a class="navbar-brand font-weight-bolder ml-4 i text-warning" href="#">Locate the ISS</a>
+                    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                      <span class="navbar-toggler-icon"></span>
+                    </button>
+                  
+                    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                      <ul class="navbar-nav ml-auto pl-4">
+                        <li class="nav-item active shadow mr-5">
+                          <a class="nav-link i  text-light disabled" href="#" aria-disabled="true"><span class="text-info">Latitude: </span><span id="lat"></span>&#176;</a>
+                        </li>
+                        <li class="nav-item active shadow mr-5">
+                            <a class="nav-link i  text-light disabled" href="#"><span class="text-info">Longitude: </span><span id="long"></span>&#176;</a>
+                        </li>
+                        <li class="nav-item active shadow mr-5">
+                            <a class="nav-link i  text-light disabled" href="#"><span class="text-info">Altitude: </span><span id="alt"></span> kms</a>
+                        </li>
+                        <li class="nav-item active shadow">
+                            <a class="nav-link i  text-light disabled" href="#"><span class="text-info">Velocity: </span><span id="vel"></span> kms/h</a>
+                        </li>
+                      </ul>
+                    </div>
+            </nav>
+    
+    </div>
+    <div id="iss" style="width:100%;height:500px"></div>
+
+    <script>
+        var firsttime=true;
+        var marker;
+        var map;
+
+        async function isslocation(){
+            let resp=await fetch("https://api.wheretheiss.at/v1/satellites/25544");
+            var issDetails=await resp.json();
+            return issDetails;
+        }
+
+        async function displayIss(){
+                var {latitude,longitude,altitude,velocity} = await isslocation();
+                document.getElementById("lat").textContent=latitude.toFixed(2);
+                document.getElementById("long").textContent=longitude.toFixed(2);
+                document.getElementById("alt").textContent=altitude.toFixed(2);
+                document.getElementById("vel").textContent=velocity.toFixed(2);
+
+                marker.setLatLng([latitude,longitude]);
+                if(firsttime){
+                map.setView([latitude,longitude]);
+                firsttime=false;
+                }
+            }
+
+        async function mapiss(){
+            let d = await isslocation();
+            map = L.map('iss').setView([d.latitude,d.longitude], 3);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            }).addTo(map);
+            map.zoomControl.setPosition('bottomright');
+            var myIcon = L.icon({
+                    iconUrl: 'iss2.svg',
+                    iconSize: [76, 190],
+                    iconAnchor: [38, 95],
+                    popupAnchor: [0, -30],
+                });
+            marker=L.marker([d.latitude,d.longitude],{icon:myIcon}).addTo(map)
+                .bindPopup('International Space Station')
+                .openPopup();
+            setInterval(displayIss,1000);
+        }
+        mapiss().catch(err=>console.error(err));
+
+    </script>
+</body>
+</html>
+
